@@ -64,7 +64,7 @@ defmodule MembraneTranscription.Realtime do
       count_out: 0
     }
 
-    {:ok, state}
+    {[], state}
   end
 
   @impl true

@@ -66,7 +66,7 @@ defmodule MembraneTranscription.Element do
       transcribing?: false
     }
 
-    {:ok, state}
+    {[], state}
   end
 
   @impl true
