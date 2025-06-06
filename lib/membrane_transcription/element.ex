@@ -1,6 +1,5 @@
 defmodule MembraneTranscription.Element do
   # TODO: Can probably rename this. Maybe Filter instead of Element as it is a pass-through
-  alias Membrane.RawAudio
   alias MembraneTranscription.Whisper
   alias MembraneTranscription.FancyWhisper
   use Membrane.Filter
@@ -30,19 +29,13 @@ defmodule MembraneTranscription.Element do
   # TODO: the user to conform to that with the software resample filter for example, means it will fail
   # TODO: clearly for bad inputs
   def_input_pad(:input,
-    demand_unit: :buffers,
-    caps: :any
+    accepted_format: _any
   )
 
   def_output_pad(:output,
-    availability: :always,
-    mode: :pull,
-    caps: :any
+    accepted_format: _any,
+    availability: :always
   )
-
-  # TODO: Remove silence stuff, not used, not working
-  @silence <<0, 0, 0, 0>>
-  @tolerate_silence_ms 600
 
   # TODO: See notes about input cap, this is probably still a useful number to have for some math
   @assumed_sample_rate 16000
@@ -56,7 +49,11 @@ defmodule MembraneTranscription.Element do
   defp time, do: :erlang.system_time(:millisecond)
 
   @impl true
-  def handle_init(%__MODULE{buffer_duration: buffer_duration, fancy?: fancy?, priority: priority}) do
+  def handle_init(_ctx, %__MODULE{
+        buffer_duration: buffer_duration,
+        fancy?: fancy?,
+        priority: priority
+      }) do
     state = %{
       buffer_duration: buffer_duration,
       previous: nil,
@@ -73,12 +70,12 @@ defmodule MembraneTranscription.Element do
   end
 
   @impl true
-  def handle_prepared_to_playing(_ctx, state) do
+  def handle_playing(_ctx, state) do
     {{:ok, demand: :input}, state}
   end
 
   @impl true
-  def handle_process(:input, %Membrane.Buffer{} = buffer, _context, state) do
+  def handle_buffer(:input, %Membrane.Buffer{} = buffer, _context, state) do
     buffered = [state.buffered, buffer.payload]
     sample_size = @format_byte_size[:f32le]
 
@@ -171,18 +168,12 @@ defmodule MembraneTranscription.Element do
   end
 
   @impl true
-  def handle_other({:transcript, _transcript, notification}, _ctx, state) do
+  def handle_info({:transcript, _transcript, notification}, _ctx, state) do
     {{:ok, notify: notification}, %{state | transcribing?: false}}
   end
 
   @impl true
-  def handle_playing_to_prepared(_ctx, state) do
-    IO.puts("Handle playing to prepared")
-    {:ok, state}
-  end
-
-  @impl true
-  def handle_prepared_to_stopped(_ctx, state) do
+  def handle_terminate_request(_ctx, state) do
     IO.puts("Ending transcription element")
     {:ok, state}
   end

@@ -15,18 +15,16 @@ defmodule MembraneTranscription.Timestamper do
   )
 
   def_input_pad(:input,
-    demand_unit: :buffers,
-    caps: :any
+    accepted_format: _any
   )
 
   def_output_pad(:output,
-    availability: :always,
-    mode: :pull,
-    caps: :any
+    accepted_format: _any,
+    availability: :always
   )
 
   @impl true
-  def handle_init(%__MODULE{
+  def handle_init(_ctx, %__MODULE{
         bytes_per_second: bytes_per_second
       }) do
     # We determine time by bytesize
@@ -43,12 +41,12 @@ defmodule MembraneTranscription.Timestamper do
   end
 
   @impl true
-  def handle_prepared_to_playing(_ctx, state) do
+  def handle_playing(_ctx, state) do
     {{:ok, demand: :input}, state}
   end
 
   @impl true
-  def handle_process(:input, %Membrane.Buffer{} = buffer, _context, state) do
+  def handle_buffer(:input, %Membrane.Buffer{} = buffer, _context, state) do
     state = %{state | count_in: state.count_in + 1}
 
     byte_count = IO.iodata_length(buffer.payload)
@@ -86,12 +84,7 @@ defmodule MembraneTranscription.Timestamper do
   end
 
   @impl true
-  def handle_playing_to_prepared(_ctx, state) do
-    {:ok, state}
-  end
-
-  @impl true
-  def handle_prepared_to_stopped(_ctx, state) do
+  def handle_terminate_request(_ctx, state) do
     {:ok, state}
   end
 end

@@ -26,24 +26,25 @@ defmodule MembraneTranscription.Realtime do
   )
 
   def_input_pad(:input,
-    demand_unit: :buffers,
-    caps: :any
+    accepted_format: _any
   )
 
   def_output_pad(:output,
-    availability: :always,
-    mode: :pull,
-    caps: :any
+    accepted_format: _any,
+    availability: :always
   )
 
   # defp time, do: :erlang.system_time(:millisecond)
 
   @impl true
-  def handle_init(%__MODULE{
-        bytes_per_second: bytes_per_second,
-        resolution_ms: resolution_ms,
-        delay_ms: delay_ms
-      }) do
+  def handle_init(
+        _ctx,
+        %__MODULE{
+          bytes_per_second: bytes_per_second,
+          resolution_ms: resolution_ms,
+          delay_ms: delay_ms
+        }
+      ) do
     # Reminder, the timestamps are a utility for later processing
     # and it helps us indicate uneven beginnings and ends
 
@@ -67,7 +68,7 @@ defmodule MembraneTranscription.Realtime do
   end
 
   @impl true
-  def handle_prepared_to_playing(_ctx, state) do
+  def handle_playing(_ctx, state) do
     {{:ok, demand: :input}, state}
   end
 
@@ -77,7 +78,7 @@ defmodule MembraneTranscription.Realtime do
   end
 
   @impl true
-  def handle_process(:input, %Membrane.Buffer{} = buffer, context, state) do
+  def handle_buffer(:input, %Membrane.Buffer{} = buffer, context, state) do
     state = %{state | count_in: state.count_in + 1}
 
     buffered = [state.buffered | buffer.payload]
@@ -134,13 +135,7 @@ defmodule MembraneTranscription.Realtime do
   end
 
   @impl true
-  def handle_playing_to_prepared(_ctx, state) do
-    {:ok, state}
-  end
-
-  @impl true
-  def handle_prepared_to_stopped(_ctx, state) do
-    IO.puts("prepared to stopped")
+  def handle_terminate_request(_ctx, state) do
     {:ok, state}
   end
 end

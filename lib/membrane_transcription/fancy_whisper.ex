@@ -34,7 +34,7 @@ defmodule MembraneTranscription.FancyWhisper do
     {:ok, tokenizer} = Bumblebee.load_tokenizer({:hf, "openai/whisper-#{model}"})
 
     serving =
-      Bumblebee.Audio.speech_to_text(whisper, featurizer, tokenizer,
+      Bumblebee.Audio.speech_to_text_whisper(whisper, featurizer, tokenizer,
         max_new_tokens: 100,
         defn_options: [compiler: EXLA]
       )
