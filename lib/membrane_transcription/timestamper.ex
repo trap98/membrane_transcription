@@ -15,12 +15,15 @@ defmodule MembraneTranscription.Timestamper do
   )
 
   def_input_pad(:input,
-    accepted_format: _any
+    accepted_format: _any,
+    demand_unit: :buffers,
+    flow_control: :manual
   )
 
   def_output_pad(:output,
     accepted_format: _any,
-    availability: :always
+    availability: :always,
+    flow_control: :manual
   )
 
   @impl true
@@ -42,7 +45,7 @@ defmodule MembraneTranscription.Timestamper do
 
   @impl true
   def handle_playing(_ctx, state) do
-    {{:ok, demand: :input}, state}
+    {[demand: :input], state}
   end
 
   @impl true
@@ -70,21 +73,21 @@ defmodule MembraneTranscription.Timestamper do
 
     actions = [demand: :input, buffer: out_buffer]
 
-    {{:ok, actions}, %{state | count_out: state.count_out + 1}}
+    {actions, %{state | count_out: state.count_out + 1}}
   end
 
   @impl true
   def handle_demand(:output, size, :buffers, _context, state) do
-    {{:ok, demand: {:input, size}}, state}
+    {[demand: {:input, size}], state}
   end
 
   @impl true
   def handle_end_of_stream(_pad, _context, state) do
-    {{:ok, end_of_stream: :output}, state}
+    {[end_of_stream: :output], state}
   end
 
   @impl true
   def handle_terminate_request(_ctx, state) do
-    {:ok, state}
+    {[], state}
   end
 end

@@ -29,7 +29,9 @@ defmodule MembraneTranscription.Element do
   # TODO: the user to conform to that with the software resample filter for example, means it will fail
   # TODO: clearly for bad inputs
   def_input_pad(:input,
-    accepted_format: _any
+    accepted_format: _any,
+    demand_unit: :buffers,
+    flow_control: :manual
   )
 
   def_output_pad(:output,
@@ -71,7 +73,7 @@ defmodule MembraneTranscription.Element do
 
   @impl true
   def handle_playing(_ctx, state) do
-    {{:ok, demand: :input}, state}
+    {[demand: :input], state}
   end
 
   @impl true
@@ -102,7 +104,7 @@ defmodule MembraneTranscription.Element do
         %{state | buffered: [data], end_ts: max(buffer.metadata.end_ts, state.end_ts)}
       end
 
-    {{:ok, buffer: {:output, buffer}}, state}
+    {[buffer: {:output, buffer}, demand: {:input, 1}], state}
   end
 
   defp trigger_transcript(data, state, end_ts) do
@@ -135,14 +137,13 @@ defmodule MembraneTranscription.Element do
 
       notification = {:transcribed, transcript, type, state.start_ts, end_ts}
 
-      IO.inspect(transcript, label: "transcript")
       send(send_to, {:transcript, transcript, notification})
     end)
   end
 
   @impl true
   def handle_demand(:output, size, :buffers, _context, state) do
-    {{:ok, demand: {:input, size}}, state}
+    {[demand: {:input, size}], state}
   end
 
   @impl true
@@ -164,17 +165,17 @@ defmodule MembraneTranscription.Element do
     IO.inspect("transcription element runtime #{t - state.started_at}ms")
     notification = {:transcribed, transcript, :end, state.start_ts, state.end_ts}
 
-    {{:ok, end_of_stream: :output, notify: notification}, state}
+    {[end_of_stream: :output, notify_parent: notification], state}
   end
 
   @impl true
   def handle_info({:transcript, _transcript, notification}, _ctx, state) do
-    {{:ok, notify: notification}, %{state | transcribing?: false}}
+    {[notify_parent: notification], %{state | transcribing?: false}}
   end
 
   @impl true
   def handle_terminate_request(_ctx, state) do
     IO.puts("Ending transcription element")
-    {:ok, state}
+    {[], state}
   end
 end

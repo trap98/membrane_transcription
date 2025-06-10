@@ -26,7 +26,9 @@ defmodule MembraneTranscription.Realtime do
   )
 
   def_input_pad(:input,
-    accepted_format: _any
+    accepted_format: _any,
+    demand_unit: :buffers,
+    flow_control: :manual
   )
 
   def_output_pad(:output,
@@ -69,12 +71,12 @@ defmodule MembraneTranscription.Realtime do
 
   @impl true
   def handle_playing(_ctx, state) do
-    {{:ok, demand: :input}, state}
+    {[demand: :input], state}
   end
 
   @impl true
   def handle_demand(:output, size, :buffers, _context, state) do
-    {{:ok, demand: {:input, size}}, %{state | count_out: state.count_out + 1}}
+    {[demand: {:input, size}], %{state | count_out: state.count_out + 1}}
   end
 
   @impl true
@@ -108,7 +110,7 @@ defmodule MembraneTranscription.Realtime do
   end
 
   def capture_buffer(state) do
-    {{:ok, demand: :input}, %{state | buffered: state.buffered}}
+    {[demand: :input], %{state | buffered: state.buffered}}
   end
 
   defp send_buffer(duration, context, state, actions \\ []) do
@@ -131,11 +133,11 @@ defmodule MembraneTranscription.Realtime do
 
     actions = [demand: :input, buffer: out_buffer] ++ actions
 
-    {{:ok, actions}, %{state | buffered: []}}
+    {[actions], %{state | buffered: []}}
   end
 
   @impl true
   def handle_terminate_request(_ctx, state) do
-    {:ok, state}
+    {[], state}
   end
 end

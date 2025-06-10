@@ -60,8 +60,7 @@ defmodule MembraneTranscriptionTest do
         |> to(:fake_out)
       ]
 
-      {{:ok, spec: %ParentSpec{children: children, links: links}, playback: :playing},
-       %{to_pid: to_pid}}
+      {{:ok, spec: %ParentSpec{children: children, links: links}}, %{to_pid: to_pid}}
     end
 
     @impl true
@@ -83,7 +82,7 @@ defmodule MembraneTranscriptionTest do
       IO.puts("fake sink complete")
       send(state.to_pid, :done)
       terminate(self())
-      {{:ok, playback: :stopped}, state}
+      {:ok, state}
     end
 
     @impl true
@@ -91,7 +90,7 @@ defmodule MembraneTranscriptionTest do
       IO.puts("transcription complete")
       IO.inspect(state.to_pid)
       send(state.to_pid, :transcription_done)
-      {{:ok, playback: :stopped}, state}
+      {:ok, state}
     end
 
     @impl true
