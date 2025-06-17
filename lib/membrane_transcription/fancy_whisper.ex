@@ -37,6 +37,7 @@ defmodule MembraneTranscription.FancyWhisper do
     serving =
       Bumblebee.Audio.speech_to_text_whisper(whisper, featurizer, tokenizer, generation_config,
         defn_options: [compiler: EXLA],
+        compile: [batch_size: 1],
         task: :transcribe,
         language: Keyword.get(opts, :language, "en")
       )
